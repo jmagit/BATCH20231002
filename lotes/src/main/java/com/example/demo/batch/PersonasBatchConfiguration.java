@@ -1,5 +1,8 @@
 package com.example.demo.batch;
 
+import java.io.IOException;
+import java.io.Writer;
+
 import javax.sql.DataSource;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -12,6 +15,7 @@ import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.file.FlatFileHeaderCallback;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
@@ -29,6 +33,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
 import com.example.demo.model.Persona;
 import com.example.demo.model.PersonaDTO;
+import com.example.demo.model.PhotoDTO;
 
 @Configuration
 public class PersonasBatchConfiguration {
@@ -41,7 +46,7 @@ public class PersonasBatchConfiguration {
 	public FlatFileItemReader<PersonaDTO> personaCSVItemReader(String fname) {
 		return new FlatFileItemReaderBuilder<PersonaDTO>()
 				.name("personaCSVItemReader")
-				.resource(new ClassPathResource(fname))
+				.resource(new FileSystemResource(fname))
 				.linesToSkip(1)
 				.delimited()
 				.names(new String[] { "id", "nombre", "apellidos", "correo", "sexo", "ip" })
@@ -67,7 +72,7 @@ public class PersonasBatchConfiguration {
 	public Step importCSV2DBStep1(JdbcBatchItemWriter<Persona> personaDBItemWriter) {
 		return new StepBuilder("importCSV2DBStep1", jobRepository)
 				.<PersonaDTO, Persona>chunk(10, transactionManager)
-				.reader(personaCSVItemReader("personas-1.csv"))
+				.reader(personaCSVItemReader("input/personas-1.csv"))
 				.processor(personaItemProcessor)
 				.writer(personaDBItemWriter)
 				.build();
@@ -123,7 +128,7 @@ public class PersonasBatchConfiguration {
 	            .build();
 	}
 
-	@Bean
+	//@Bean
 	public Job personasJob(PersonasJobListener listener, Step importCSV2DBStep1, Step exportDB2CSVStep, Step copyFilesInDir) {
 		return new JobBuilder("personasJob", jobRepository)
 				.incrementer(new RunIdIncrementer())
@@ -132,6 +137,34 @@ public class PersonasBatchConfiguration {
 				.next(importCSV2DBStep1)
 				.next(exportDB2CSVStep)
 				.build();
+	}
+
+	@Autowired 
+	private PhotoRestItemReader photoRestItemReader;
+	
+	@Bean
+	public Job photoJob() {
+		String[] headers = new String[] { "id", "author", "width", "height", "url", "download_url" };
+		return new JobBuilder("photoJob", jobRepository)
+				.incrementer(new RunIdIncrementer())
+			.start(
+					new StepBuilder("photoJobStep1", jobRepository)
+						.<PhotoDTO, PhotoDTO>chunk(100, transactionManager)
+						.reader(photoRestItemReader)
+						.writer(new FlatFileItemWriterBuilder<PhotoDTO>().name("photoCSVItemWriter")
+							.resource(new FileSystemResource("output/photoData.csv"))
+							.headerCallback(new FlatFileHeaderCallback() {
+								public void writeHeader(Writer writer) throws IOException {
+								writer.write(String.join(",", headers));
+								}})
+							.lineAggregator(new DelimitedLineAggregator<PhotoDTO>() { {
+								setDelimiter(",");
+								setFieldExtractor(new BeanWrapperFieldExtractor<PhotoDTO>() { {
+									setNames(headers);
+								}});
+					}}).build())
+				.build())
+			.build();
 	}
 
 }
