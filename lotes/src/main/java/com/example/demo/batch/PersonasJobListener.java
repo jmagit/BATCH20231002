@@ -26,5 +26,6 @@ public class PersonasJobListener implements JobExecutionListener {
 					(rs, row) -> new Persona(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4)))
 			.forEach(p -> log.info("Fila: " + p));
 		}
+		log.info(jobExecution.getStatus().toString());
 	}	
 }

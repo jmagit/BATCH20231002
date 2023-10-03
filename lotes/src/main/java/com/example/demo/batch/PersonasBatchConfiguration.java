@@ -208,13 +208,14 @@ public class PersonasBatchConfiguration {
 		return new JobBuilder("personasJob", jobRepository)
 				.incrementer(new RunIdIncrementer())
 				.listener(listener)
-				.start(copyFilesInDir)
-				.next(importCSV2DBStep1)
+				.start(copyFilesInDir).on("FAILED").fail()
+				.from(copyFilesInDir).on("*").to(importCSV2DBStep1)
 				.next(importCSV2DBStep2)
 				.next(importCSV2DBStep3)
 				.next(importXML2DBStep1)
 				.next(exportDB2CSVStep)
 				.next(exportDB2XMLStep)
+				.end()
 				.build();
 	}
 
