@@ -9,3 +9,7 @@
 
 - https://docs.spring.io/spring-boot/docs/current/reference/html/
 - https://docs.spring.io/spring-batch/docs/current/reference/html/
+
+## Ejemplos
+
+- https://github.com/spring-projects/spring-batch/tree/main/spring-batch-samples
