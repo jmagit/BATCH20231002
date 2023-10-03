@@ -39,7 +39,8 @@ public class PersonasBatchConfiguration {
 	PlatformTransactionManager transactionManager;
 
 	public FlatFileItemReader<PersonaDTO> personaCSVItemReader(String fname) {
-		return new FlatFileItemReaderBuilder<PersonaDTO>().name("personaCSVItemReader")
+		return new FlatFileItemReaderBuilder<PersonaDTO>()
+				.name("personaCSVItemReader")
 				.resource(new ClassPathResource(fname))
 				.linesToSkip(1)
 				.delimited()
