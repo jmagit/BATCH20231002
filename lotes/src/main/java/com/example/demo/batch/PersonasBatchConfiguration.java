@@ -90,7 +90,7 @@ public class PersonasBatchConfiguration {
 				.resource(new FileSystemResource("output/outputData.csv"))
 				.lineAggregator(new DelimitedLineAggregator<Persona>() {
 					{
-						setDelimiter(",");
+						setDelimiter("|");
 						setFieldExtractor(new BeanWrapperFieldExtractor<Persona>() {
 							{
 								setNames(new String[] { "id", "nombre", "correo", "ip" });
